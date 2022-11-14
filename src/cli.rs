@@ -155,6 +155,12 @@ impl App {
                     b"--color=auto" => app.color = Color::Auto,
                     b"--color=always" => app.color = Color::Always,
                     b"--version" => print_version = true,
+
+                    b"--si" => {
+                        app.human_readable_sizes = true;
+                        app.use_si_size_units = true;
+                    }
+
                     _ => {
                         error!("unrecognized option \'", arg, "\'\n");
                         args_valid = false;
@@ -272,10 +278,6 @@ impl App {
                 b'x' => {
                     app.grid_sort_direction = SortDirection::Horizontal;
                     unimplemented!("-x is not yet implemented");
-                }
-                b'z' => {
-                    app.human_readable_sizes = true;
-                    app.use_si_size_units = true;
                 }
                 b'1' => match app.display_mode {
                     DisplayMode::Long => {}
