@@ -1,4 +1,9 @@
 ## fls
+
+A personal fork of `fls` that adds support for `-h` from GNU `ls`.
+
+----
+
 A nearly-POSIX-compliant and libc-less `ls` that's smaller, faster, and prettier than GNU's<sup>1</sup>.
 
 [exa](https://github.com/ogham/exa) and [lsd](https://github.com/Peltoche/lsd) are both great `ls`-like Rust programs, but they're slower than the system `ls` and about 10x the code size. Plus you can't actually replace your `ls` with one of them, because some software relies on parsing the output of `ls`. But even as a user experience improvement, I think other projects tell the wrong story; modern software does not need to be larger or slower.

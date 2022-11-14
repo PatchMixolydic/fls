@@ -10,6 +10,9 @@ use veneer::{fs::Directory, syscalls, CStr};
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 use unicode_width::UnicodeWidthStr;
 
+const BINARY_UNITS_PER_LARGER_UNIT: u64 = 1024;
+static SIZE_UNITS: [u8; 9] = [b'B', b'k', b'M', b'G', b'T', b'P', b'E', b'Z', b'Y'];
+
 #[macro_export]
 macro_rules! print {
     ($app:expr, $($item:expr),+) => {
@@ -61,7 +64,13 @@ pub fn write_details(entries: &[(DirEntry, Option<Status>)], dir: &Directory, ap
             longest_group_len = longest_group_len.max(app.getgrgid(status.gid).len());
         }
 
-        largest_size = largest_size.max(status.size as usize);
+        largest_size = if app.human_readable_sizes {
+            // extra character is for the unit
+            largest_size.max(convert_to_human_readable_size(status.size as u64).0 as usize + 1)
+        } else {
+            largest_size.max(status.size as usize)
+        };
+
         largest_links = largest_links.max(status.links as usize);
         inode_len = inode_len.max(status.inode as usize);
         blocks_len = blocks_len.max(status.blocks as usize);
@@ -132,10 +141,14 @@ pub fn write_details(entries: &[(DirEntry, Option<Status>)], dir: &Directory, ap
                 .align_left(group, longest_group_len);
         }
 
-        app.out
-            .push(b' ')
-            .style(GreenBold)
-            .align_right(status.size as u64, largest_size);
+        app.out.push(b' ').style(GreenBold);
+
+        if app.human_readable_sizes {
+            app.out
+                .align_right_human_readable_size(status.size as u64, largest_size);
+        } else {
+            app.out.align_right(status.size as u64, largest_size);
+        }
 
         let localtime = app.convert_to_localtime(status.time);
 
@@ -190,6 +203,17 @@ fn print_total_blocks(entries: &[(DirEntry, Option<Status>)], app: &mut App) {
             .sum::<i64>() as u64,
         "\n"
     );
+}
+
+fn convert_to_human_readable_size(mut size: u64) -> (u64, u8) {
+    let mut unit_index = 0;
+
+    while size >= BINARY_UNITS_PER_LARGER_UNIT && unit_index < SIZE_UNITS.len() {
+        size /= BINARY_UNITS_PER_LARGER_UNIT;
+        unit_index += 1;
+    }
+
+    (size, SIZE_UNITS[unit_index])
 }
 
 pub struct LayoutCursor {
@@ -599,13 +623,25 @@ impl OutputBuffer {
 
     pub fn align_right(&mut self, value: u64, width: usize) -> &mut Self {
         let mut buf = Buffer::new();
-        let formatted = buf.format(value);
-        if formatted.len() < width {
-            for _ in 0..width - formatted.len() {
+        self.align_right_bytes(buf.format(value), width)
+    }
+
+    pub fn align_right_human_readable_size(&mut self, value: u64, width: usize) -> &mut Self {
+        let (size, unit) = convert_to_human_readable_size(value);
+
+        let mut buf = Buffer::new();
+        self.align_right_bytes(buf.format(size), width);
+        self.push(unit);
+        self
+    }
+
+    pub fn align_right_bytes(&mut self, value: &[u8], width: usize) -> &mut Self {
+        if value.len() < width {
+            for _ in 0..width - value.len() {
                 self.push(b' ');
             }
         }
-        self.write(formatted);
+        self.write(value);
         self
     }
 }

@@ -32,6 +32,7 @@ pub struct App {
     pub print_owner: bool,
     pub print_group: bool,
     pub color: Color,
+    pub human_readable_sizes: bool,
 
     pub args: Vec<CStr<'static>>,
 
@@ -129,6 +130,7 @@ impl App {
             print_owner: true,
             print_group: true,
             color: Color::Auto,
+            human_readable_sizes: false,
             out: OutputBuffer::to_fd(1),
             args: Vec::with_capacity(4),
             uid_names: Vec::new(),
@@ -220,6 +222,9 @@ impl App {
                 b'g' => {
                     app.display_mode = DisplayMode::Long;
                     app.print_owner = false;
+                }
+                b'h' => {
+                    app.human_readable_sizes = true;
                 }
                 b'i' => {
                     app.print_inode = true;
