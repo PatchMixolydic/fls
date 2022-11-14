@@ -19,5 +19,7 @@ compiler_builtins = { version = "0.1", default-features = false, features = ["me
 panic = "abort"
 
 [profile.release]
-panic = "abort"
-debug = 1
+codegen-units = 1
+lto = true
+panic = 'abort'
+strip = 'symbols'
