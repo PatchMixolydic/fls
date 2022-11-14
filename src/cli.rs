@@ -33,6 +33,7 @@ pub struct App {
     pub print_group: bool,
     pub color: Color,
     pub human_readable_sizes: bool,
+    pub use_si_size_units: bool,
 
     pub args: Vec<CStr<'static>>,
 
@@ -131,6 +132,7 @@ impl App {
             print_group: true,
             color: Color::Auto,
             human_readable_sizes: false,
+            use_si_size_units: false,
             out: OutputBuffer::to_fd(1),
             args: Vec::with_capacity(4),
             uid_names: Vec::new(),
@@ -270,6 +272,10 @@ impl App {
                 b'x' => {
                     app.grid_sort_direction = SortDirection::Horizontal;
                     unimplemented!("-x is not yet implemented");
+                }
+                b'z' => {
+                    app.human_readable_sizes = true;
+                    app.use_si_size_units = true;
                 }
                 b'1' => match app.display_mode {
                     DisplayMode::Long => {}

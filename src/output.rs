@@ -11,6 +11,7 @@ use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOT
 use unicode_width::UnicodeWidthStr;
 
 const BINARY_UNITS_PER_LARGER_UNIT: u64 = 1024;
+const DECIMAL_UNITS_PER_LARGER_UNIT: u64 = 1000;
 static SIZE_UNITS: [u8; 9] = [b'B', b'k', b'M', b'G', b'T', b'P', b'E', b'Z', b'Y'];
 
 #[macro_export]
@@ -55,6 +56,12 @@ pub fn write_details(entries: &[(DirEntry, Option<Status>)], dir: &Directory, ap
     let mut inode_len = 0;
     let mut blocks_len = 0;
 
+    let size_units_per_larger_unit = if app.use_si_size_units {
+        DECIMAL_UNITS_PER_LARGER_UNIT
+    } else {
+        BINARY_UNITS_PER_LARGER_UNIT
+    };
+
     for status in entries.iter().filter_map(|e| e.1.as_ref()) {
         if app.print_owner {
             longest_name_len = longest_name_len.max(app.getpwuid(status.uid).len());
@@ -66,7 +73,11 @@ pub fn write_details(entries: &[(DirEntry, Option<Status>)], dir: &Directory, ap
 
         largest_size = if app.human_readable_sizes {
             // extra character is for the unit
-            largest_size.max(convert_to_human_readable_size(status.size as u64).0 as usize + 1)
+            largest_size.max(
+                convert_to_human_readable_size(status.size as u64, size_units_per_larger_unit).0
+                    as usize
+                    + 1,
+            )
         } else {
             largest_size.max(status.size as usize)
         };
@@ -144,8 +155,11 @@ pub fn write_details(entries: &[(DirEntry, Option<Status>)], dir: &Directory, ap
         app.out.push(b' ').style(GreenBold);
 
         if app.human_readable_sizes {
-            app.out
-                .align_right_human_readable_size(status.size as u64, largest_size);
+            app.out.align_right_human_readable_size(
+                status.size as u64,
+                largest_size,
+                size_units_per_larger_unit,
+            );
         } else {
             app.out.align_right(status.size as u64, largest_size);
         }
@@ -205,11 +219,11 @@ fn print_total_blocks(entries: &[(DirEntry, Option<Status>)], app: &mut App) {
     );
 }
 
-fn convert_to_human_readable_size(mut size: u64) -> (u64, u8) {
+fn convert_to_human_readable_size(mut size: u64, size_units_per_larger_unit: u64) -> (u64, u8) {
     let mut unit_index = 0;
 
-    while size >= BINARY_UNITS_PER_LARGER_UNIT && unit_index < SIZE_UNITS.len() {
-        size /= BINARY_UNITS_PER_LARGER_UNIT;
+    while size >= size_units_per_larger_unit && unit_index < SIZE_UNITS.len() {
+        size /= size_units_per_larger_unit;
         unit_index += 1;
     }
 
@@ -626,8 +640,13 @@ impl OutputBuffer {
         self.align_right_bytes(buf.format(value), width)
     }
 
-    pub fn align_right_human_readable_size(&mut self, value: u64, width: usize) -> &mut Self {
-        let (size, unit) = convert_to_human_readable_size(value);
+    pub fn align_right_human_readable_size(
+        &mut self,
+        value: u64,
+        width: usize,
+        size_units_per_larger_unit: u64,
+    ) -> &mut Self {
+        let (size, unit) = convert_to_human_readable_size(value, size_units_per_larger_unit);
 
         let mut buf = Buffer::new();
         self.align_right_bytes(buf.format(size), width);
