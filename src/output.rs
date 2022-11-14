@@ -223,7 +223,7 @@ fn convert_to_human_readable_size(mut size: u64, size_units_per_larger_unit: u64
     let mut unit_index = 0;
 
     while size >= size_units_per_larger_unit && unit_index < SIZE_UNITS.len() {
-        size /= size_units_per_larger_unit;
+        size = size.div_ceil(size_units_per_larger_unit);
         unit_index += 1;
     }
 

@@ -1,3 +1,4 @@
+#![feature(int_roundings)]
 #![no_std]
 #![no_main]
 

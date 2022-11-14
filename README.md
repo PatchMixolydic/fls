@@ -2,8 +2,8 @@
 
 A personal fork of `fls` that adds some extra features:
 
-* `-h` — display filesizes in human-readable units (such as kibibytes); taken from GNU's `ls`
-* `-z` — display filesizes in SI units (such as kilobytes); essentially `--si` from GNU's `ls`
+* `-h` – display filesizes in human-readable units (such as kibibytes); taken from GNU's `ls`
+* `-z` – display filesizes in SI units (such as kilobytes); essentially `--si` from GNU's `ls`
 
 ----
 
